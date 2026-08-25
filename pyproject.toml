@@ -1,0 +1,29 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["drinkit_env", "alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+exclude = "drinkit_env|alembic/versions"
+
+[tool.mypy]
+python_version = "3.12"
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+exclude = "drinkit_env|alembic/versions"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "integration: requires a reachable PostgreSQL test database",
+]

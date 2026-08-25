@@ -1,0 +1,40 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+drinkit_env/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local databases and runtime data
+*.db
+*.sqlite
+*.sqlite3
+storage/
+*.log
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Alembic generated cache
+alembic/__pycache__/
