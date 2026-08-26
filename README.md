@@ -2,9 +2,13 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 1 status
+## Phase 2 status
 
-Phase 1 establishes the PostgreSQL and SQLAlchemy foundation only. It does not implement authentication, catalog, inventory workflows, carts, orders, payments, or delivery.
+Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
+email/password authentication, Argon2id password hashing, persisted devices,
+rotating opaque refresh-token sessions, JWT access tokens, logout, and the
+authenticated user profile endpoint. Catalog, inventory workflows, carts,
+orders, payments, and delivery remain future phases.
 
 ## Local setup
 
@@ -41,7 +45,14 @@ Run the API:
 drinkit_env/bin/uvicorn app.main:app --reload
 ```
 
-The OpenAPI documents are available at `/api/v1/openapi.json`, `/docs`, and `/redoc`. Liveness is `/api/v1/health/live`; readiness performs a real PostgreSQL query at `/api/v1/health/ready`.
+The OpenAPI documents are available at `/api/v1/openapi.json`, `/docs`, and
+`/redoc`. Liveness is `/api/v1/health/live`; readiness performs a real
+PostgreSQL query at `/api/v1/health/ready`.
+
+Authentication endpoints are under `/api/v1/auth/`: `register`, `login`,
+`refresh`, `logout`, and `me`. See
+[`docs/authentication.md`](docs/authentication.md) for token and session
+security details.
 
 ## Verification
 
@@ -73,5 +84,11 @@ drinkit_env/bin/python -m pytest -q
 - Models use explicit table names, UUIDv4 primary keys, timezone-aware UTC timestamps, named constraints, and indexes justified by access paths.
 - Domain models should be imported from `app.models` so Alembic autogeneration sees their metadata.
 - Soft deletion is opt-in per domain; it is not part of the universal base model.
+- Authentication services own token/session transactions; refresh rotation uses
+  row locking and refresh-token digests are the only persisted token form.
 
-See [`docs/database.md`](docs/database.md) and [`docs/adr/0001-database-access-strategy.md`](docs/adr/0001-database-access-strategy.md) for the Phase 1 decisions.
+See [`docs/database.md`](docs/database.md),
+[`docs/authentication.md`](docs/authentication.md),
+[`docs/adr/0001-database-access-strategy.md`](docs/adr/0001-database-access-strategy.md),
+and [`docs/adr/0002-authentication-session-strategy.md`](docs/adr/0002-authentication-session-strategy.md)
+for the Phase 1 and Phase 2 decisions.

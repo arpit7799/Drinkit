@@ -1,3 +1,5 @@
+import pytest
+
 from app.core.config import get_settings
 
 
@@ -31,5 +33,16 @@ def test_database_pool_settings_are_loaded_from_environment(monkeypatch):
     assert settings.db_pool_timeout == 11
     assert settings.db_pool_recycle == 900
     assert settings.db_pool_pre_ping is False
+
+    get_settings.cache_clear()
+
+
+def test_production_rejects_the_development_jwt_secret(monkeypatch):
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    get_settings.cache_clear()
+
+    with pytest.raises(ValueError, match="JWT_SECRET_KEY"):
+        get_settings()
 
     get_settings.cache_clear()

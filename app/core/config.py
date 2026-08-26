@@ -1,9 +1,10 @@
 """Application configuration loaded from environment variables."""
 
 from functools import lru_cache
+from typing import Literal
 from urllib.parse import urlsplit, urlunsplit
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +37,19 @@ class Settings(BaseSettings):
     db_pool_recycle: int = Field(default=1800, ge=0)
     db_pool_pre_ping: bool = True
     sql_echo: bool = False
+
+    jwt_secret_key: str = "development-only-change-this-secret-key"
+    jwt_algorithm: Literal["HS256"] = "HS256"
+    access_token_expire_minutes: int = Field(default=15, ge=1, le=60)
+    refresh_token_expire_days: int = Field(default=30, ge=1, le=365)
+
+    @model_validator(mode="after")
+    def production_requires_explicit_jwt_secret(self) -> "Settings":
+        if self.app_env.lower() in {"production", "prod"} and (
+            self.jwt_secret_key.startswith("development-only") or len(self.jwt_secret_key) < 32
+        ):
+            raise ValueError("JWT_SECRET_KEY must be a strong deployment secret in production")
+        return self
 
     @field_validator("database_url")
     @classmethod
