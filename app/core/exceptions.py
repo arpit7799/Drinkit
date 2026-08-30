@@ -35,3 +35,33 @@ class InvalidAccessToken(AppError):
     code = "invalid_access_token"
     message = "The access token is invalid or expired."
     headers = {"WWW-Authenticate": "Bearer"}
+
+
+class InventoryNotFound(AppError):
+    status_code = 404
+    code = "inventory_not_found"
+    message = "The requested inventory resource was not found."
+
+
+class InvalidInventoryRequest(AppError):
+    status_code = 400
+    code = "invalid_inventory_request"
+    message = "The inventory request is invalid."
+
+
+class InsufficientInventory(AppError):
+    status_code = 409
+    code = "insufficient_inventory"
+    message = "There is not enough available inventory."
+
+
+class InventoryIdempotencyConflict(AppError):
+    status_code = 409
+    code = "inventory_idempotency_conflict"
+    message = "The idempotency key was already used with different data."
+
+
+class ReservationConflict(AppError):
+    status_code = 409
+    code = "reservation_conflict"
+    message = "The inventory reservation conflicts with an existing request."
