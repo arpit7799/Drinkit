@@ -56,7 +56,7 @@ Autogeneration is available after importing new ORM models from `app.models`, bu
 
 Unit tests cover configuration, metadata, naming conventions, model column contracts, and liveness without a database. Integration tests use a real PostgreSQL database through `TEST_DATABASE_URL` when `APP_ENV=test`; they exercise connectivity, PostgreSQL constraints, session transactions, and rollback. SQLite is not used as a PostgreSQL substitute.
 
-The test fixture creates only the Phase 1 metadata in the configured test database and removes it after the module. For CI, provision an isolated PostgreSQL database per job and never point tests at a developer or production database.
+The test fixture creates the current ORM metadata in the configured test database and removes test data after the module. Migration verification separately runs against a freshly created database. For CI, provision an isolated PostgreSQL database per job and never point tests at a developer or production database.
 
 ## Docker
 

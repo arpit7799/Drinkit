@@ -2,13 +2,15 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 2 status
+## Phase 3 status
 
 Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
 email/password authentication, Argon2id password hashing, persisted devices,
 rotating opaque refresh-token sessions, JWT access tokens, logout, and the
-authenticated user profile endpoint. Catalog, inventory workflows, carts,
-orders, payments, and delivery remain future phases.
+authenticated user profile endpoint. Phase 3 adds a read-only catalog
+foundation with hierarchical categories, products, category membership, and
+sellable variants/SKUs. Inventory, pricing, carts, orders, payments, delivery,
+and catalog administration remain future phases.
 
 ## Local setup
 
@@ -54,6 +56,10 @@ Authentication endpoints are under `/api/v1/auth/`: `register`, `login`,
 [`docs/authentication.md`](docs/authentication.md) for token and session
 security details.
 
+Catalog endpoints are under `/api/v1/catalog/`: `categories`, `products`, and
+`products/{slug}`. See [`docs/catalog.md`](docs/catalog.md) for the product /
+variant boundary and publication rules.
+
 ## Verification
 
 Unit tests do not require PostgreSQL. Integration tests use a real PostgreSQL database configured through `TEST_DATABASE_URL` when `APP_ENV=test`:
@@ -86,9 +92,13 @@ drinkit_env/bin/python -m pytest -q
 - Soft deletion is opt-in per domain; it is not part of the universal base model.
 - Authentication services own token/session transactions; refresh rotation uses
   row locking and refresh-token digests are the only persisted token form.
+- Catalog products describe customer-facing identity; variants describe
+  sellable SKU/package identity. Pricing and inventory are separate domains.
 
 See [`docs/database.md`](docs/database.md),
 [`docs/authentication.md`](docs/authentication.md),
+[`docs/catalog.md`](docs/catalog.md),
 [`docs/adr/0001-database-access-strategy.md`](docs/adr/0001-database-access-strategy.md),
-and [`docs/adr/0002-authentication-session-strategy.md`](docs/adr/0002-authentication-session-strategy.md)
-for the Phase 1 and Phase 2 decisions.
+[`docs/adr/0002-authentication-session-strategy.md`](docs/adr/0002-authentication-session-strategy.md),
+and [`docs/adr/0003-catalog-product-variant-boundary.md`](docs/adr/0003-catalog-product-variant-boundary.md)
+for the Phase 1, Phase 2, and Phase 3 decisions.
