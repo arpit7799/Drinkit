@@ -77,3 +77,21 @@ class InvalidAddressRequest(AppError):
     status_code = 400
     code = "invalid_address_request"
     message = "The address request is invalid."
+
+
+class FulfillmentLocationNotFound(AppError):
+    status_code = 404
+    code = "fulfillment_location_not_found"
+    message = "The requested fulfillment location was not found."
+
+
+class CoverageNotFound(AppError):
+    status_code = 404
+    code = "coverage_not_found"
+    message = "The requested fulfillment coverage was not found."
+
+
+class InvalidCoverageRequest(AppError):
+    status_code = 400
+    code = "invalid_coverage_request"
+    message = "The fulfillment coverage request is invalid."

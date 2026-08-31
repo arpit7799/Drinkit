@@ -1,23 +1,29 @@
+import logging
 from collections.abc import AsyncIterator
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.core.database import AsyncSessionFactory
+from app.core.exceptions import FulfillmentLocationNotFound, InvalidCoverageRequest
 from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import User
 from app.models.catalog import Product, ProductVariant
 from app.models.inventory import FulfillmentLocation
+from app.models.outbox_event import OutboxEvent
 from app.modules.addresses.service import (
     AddressNotFound,
     create_address,
+    deactivate_coverage,
     list_addresses,
+    list_coverage,
     resolve_fulfillment_location,
     set_default_address,
     update_address,
+    upsert_coverage,
 )
 
 pytestmark = pytest.mark.integration
@@ -137,7 +143,9 @@ async def test_default_address_is_replaced_and_fields_are_normalized(
 async def test_address_serviceability_requires_ownership_and_selects_best_active_location(
     integration_engine: AsyncEngine,
     address_scope: None,
+    caplog: pytest.LogCaptureFixture,
 ):
+    caplog.set_level(logging.INFO, logger="app.modules.addresses.service")
     user_id, first_location_id, second_location_id, _ = await _seed_user_and_locations(
         integration_engine
     )
@@ -199,6 +207,15 @@ async def test_address_serviceability_requires_ownership_and_selects_best_active
 
     assert selected is not None
     assert selected.id == second_location_id
+    serviceability_logs = [
+        record
+        for record in caplog.records
+        if record.message == "customer_address_serviceability_checked"
+    ]
+    assert serviceability_logs
+    assert serviceability_logs[-1].serviceable is True
+    assert serviceability_logs[-1].address_id == str(address.id)
+    assert not hasattr(serviceability_logs[-1], "line1")
 
 
 async def test_set_default_address_rejects_unknown_or_inactive_address(
@@ -210,6 +227,79 @@ async def test_set_default_address_rejects_unknown_or_inactive_address(
     async with AsyncSessionFactory(bind=integration_engine) as session:
         with pytest.raises(AddressNotFound):
             await set_default_address(session, user_id=user_id, address_id=uuid4())
+
+
+async def test_coverage_management_is_idempotent_and_emits_outbox_events(
+    integration_engine: AsyncEngine,
+    address_scope: None,
+):
+    _, first_location_id, _, _ = await _seed_user_and_locations(integration_engine)
+
+    async with AsyncSessionFactory(bind=integration_engine) as session:
+        first = await upsert_coverage(
+            session,
+            location_id=first_location_id,
+            postal_code="560 001",
+            priority=20,
+        )
+        second = await upsert_coverage(
+            session,
+            location_id=first_location_id,
+            postal_code="560001",
+            priority=5,
+        )
+        deactivated = await deactivate_coverage(session, coverage_id=first.id)
+        all_coverages = await list_coverage(session, location_id=first_location_id)
+        active_coverages = await list_coverage(
+            session,
+            location_id=first_location_id,
+            active_only=True,
+        )
+        events = list(
+            await session.scalars(
+                select(OutboxEvent)
+                .where(OutboxEvent.aggregate_id == first.id)
+                .order_by(OutboxEvent.created_at, OutboxEvent.id)
+            )
+        )
+
+    assert second.id == first.id
+    assert second.postal_code == "560001"
+    assert second.priority == 5
+    assert deactivated.is_active is False
+    assert [coverage.id for coverage in all_coverages] == [first.id]
+    assert active_coverages == []
+    assert [event.event_type for event in events] == [
+        "fulfillment.coverage.upserted",
+        "fulfillment.coverage.upserted",
+        "fulfillment.coverage.deactivated",
+    ]
+
+
+async def test_coverage_management_rejects_invalid_input_and_unknown_location(
+    integration_engine: AsyncEngine,
+    address_scope: None,
+):
+    async with AsyncSessionFactory(bind=integration_engine) as session:
+        with pytest.raises(InvalidCoverageRequest):
+            await upsert_coverage(
+                session,
+                location_id=uuid4(),
+                postal_code="560001",
+                priority=-1,
+            )
+        with pytest.raises(FulfillmentLocationNotFound):
+            await upsert_coverage(
+                session,
+                location_id=uuid4(),
+                postal_code="560001",
+            )
+        with pytest.raises(InvalidCoverageRequest):
+            await upsert_coverage(
+                session,
+                location_id=uuid4(),
+                postal_code="   ",
+            )
 
 
 async def test_update_address_normalizes_postal_and_country_fields(

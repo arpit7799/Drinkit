@@ -38,6 +38,10 @@ Serviceability returns HTTP 200 with `serviceable: false` when an address is
 owned and active but no active coverage matches. It returns the selected
 fulfillment location when coverage exists.
 
+Coverage setup is intentionally internal until operator authorization exists.
+The service provides transactional upsert, deterministic listing, and
+idempotent deactivation for fulfillment coverage records.
+
 ## Persistence
 
 - `customer_addresses` belongs to `users` and stores recipient and delivery
@@ -56,6 +60,11 @@ user row before changing defaults. This serializes concurrent default changes
 and protects the partial unique index. Services own their transactions; the
 authentication dependency explicitly ends its read-only transaction before a
 protected mutation service runs on the same request session.
+
+Address and coverage mutations write lifecycle records to the transactional
+outbox in the same database transaction. Serviceability checks emit structured
+logs containing identifiers and the boolean outcome, but not recipient names,
+street lines, delivery instructions, or other address PII.
 
 ## Normalization
 

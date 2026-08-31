@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.core.database import AsyncSessionFactory, get_db
@@ -12,6 +12,7 @@ from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import User
 from app.models.catalog import Product, ProductVariant
 from app.models.inventory import FulfillmentLocation
+from app.models.outbox_event import OutboxEvent
 
 pytestmark = pytest.mark.integration
 
@@ -70,6 +71,7 @@ async def _create_location_and_coverage(
 
 async def test_authenticated_address_crud_and_default_replacement(
     address_api_client: AsyncClient,
+    integration_engine: AsyncEngine,
 ):
     first_tokens, _ = await _register(address_api_client, "address-api@example.com")
     headers = {"Authorization": f"Bearer {first_tokens['access_token']}"}
@@ -122,6 +124,21 @@ async def test_authenticated_address_crud_and_default_replacement(
     assert updated.json()["city"] == "Mysuru"
     assert updated.json()["is_default"] is True
 
+    invalid = await address_api_client.post(
+        "/api/v1/addresses",
+        json={**first_payload, "country_code": "USA"},
+        headers=headers,
+    )
+    assert invalid.status_code == 422
+
+    empty_update = await address_api_client.patch(
+        f"/api/v1/addresses/{first_address['id']}",
+        json={},
+        headers=headers,
+    )
+    assert empty_update.status_code == 400
+    assert empty_update.json()["error"]["code"] == "invalid_address_request"
+
     deleted = await address_api_client.delete(
         f"/api/v1/addresses/{first_address['id']}",
         headers=headers,
@@ -130,6 +147,23 @@ async def test_authenticated_address_crud_and_default_replacement(
 
     remaining = await address_api_client.get("/api/v1/addresses", headers=headers)
     assert [address["id"] for address in remaining.json()] == [second_address["id"]]
+
+    async with AsyncSessionFactory(bind=integration_engine) as session:
+        events = list(
+            await session.scalars(
+                select(OutboxEvent)
+                .where(OutboxEvent.aggregate_id == UUID(first_address["id"]))
+                .order_by(OutboxEvent.created_at, OutboxEvent.id)
+            )
+        )
+
+    assert [event.event_type for event in events] == [
+        "customer.address.created",
+        "customer.address.updated",
+        "customer.address.deactivated",
+    ]
+    assert all("Main Street" not in str(event.payload) for event in events)
+    assert all("Alice Example" not in str(event.payload) for event in events)
 
 
 async def test_address_ownership_and_serviceability_are_protected(
@@ -173,6 +207,30 @@ async def test_address_ownership_and_serviceability_are_protected(
     assert serviceability.status_code == 200
     assert serviceability.json()["serviceable"] is True
     assert serviceability.json()["fulfillment_location"]["name"] == "API Fulfillment Hub"
+
+    uncovered = await address_api_client.post(
+        "/api/v1/addresses",
+        json={
+            "label": "Other",
+            "recipient_name": "Owner",
+            "line1": "2 Other Street",
+            "city": "Bengaluru",
+            "state": "Karnataka",
+            "postal_code": "999999",
+            "country_code": "IN",
+        },
+        headers=first_headers,
+    )
+    assert uncovered.status_code == 201
+    uncovered_serviceability = await address_api_client.get(
+        f"/api/v1/addresses/{uncovered.json()['id']}/serviceability",
+        headers=first_headers,
+    )
+    assert uncovered_serviceability.status_code == 200
+    assert uncovered_serviceability.json() == {
+        "serviceable": False,
+        "fulfillment_location": None,
+    }
 
     unauthenticated = await address_api_client.get("/api/v1/addresses")
     assert unauthenticated.status_code == 401

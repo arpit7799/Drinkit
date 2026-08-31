@@ -1,5 +1,6 @@
 """Customer address and fulfillment serviceability workflows."""
 
+import logging
 from collections.abc import Sequence
 from uuid import UUID
 
@@ -7,10 +8,19 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import transaction
-from app.core.exceptions import AddressNotFound, InvalidAddressRequest
+from app.core.exceptions import (
+    AddressNotFound,
+    CoverageNotFound,
+    FulfillmentLocationNotFound,
+    InvalidAddressRequest,
+    InvalidCoverageRequest,
+)
 from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import User
 from app.models.inventory import FulfillmentLocation
+from app.models.outbox_event import OutboxEvent
+
+logger = logging.getLogger(__name__)
 
 _TEXT_FIELDS = {
     "label",
@@ -95,6 +105,25 @@ async def create_address(
         address = CustomerAddress(user_id=user_id, is_default=is_default, **values)
         session.add(address)
         await session.flush()
+        _record_event(
+            session,
+            event_type="customer.address.created",
+            aggregate_id=address.id,
+            payload={
+                "user_id": str(user_id),
+                "postal_code": address.postal_code,
+                "country_code": address.country_code,
+                "is_default": address.is_default,
+            },
+        )
+        logger.info(
+            "customer_address_created",
+            extra={
+                "address_id": str(address.id),
+                "user_id": str(user_id),
+                "is_default": address.is_default,
+            },
+        )
         return address
 
 
@@ -176,6 +205,16 @@ async def update_address(
             address.is_default = is_default
         await session.flush()
         await session.refresh(address)
+        _record_event(
+            session,
+            event_type="customer.address.updated",
+            aggregate_id=address.id,
+            payload={"user_id": str(user_id), "postal_code": address.postal_code},
+        )
+        logger.info(
+            "customer_address_updated",
+            extra={"address_id": str(address.id), "user_id": str(user_id)},
+        )
         return address
 
 
@@ -199,6 +238,16 @@ async def set_default_address(
         address.is_default = True
         await session.flush()
         await session.refresh(address)
+        _record_event(
+            session,
+            event_type="customer.address.default_changed",
+            aggregate_id=address.id,
+            payload={"user_id": str(user_id)},
+        )
+        logger.info(
+            "customer_address_default_changed",
+            extra={"address_id": str(address.id), "user_id": str(user_id)},
+        )
         return address
 
 
@@ -221,6 +270,16 @@ async def deactivate_address(
         address.is_active = False
         address.is_default = False
         await session.flush()
+        _record_event(
+            session,
+            event_type="customer.address.deactivated",
+            aggregate_id=address.id,
+            payload={"user_id": str(user_id)},
+        )
+        logger.info(
+            "customer_address_deactivated",
+            extra={"address_id": str(address.id), "user_id": str(user_id)},
+        )
 
 
 async def resolve_fulfillment_location(
@@ -232,7 +291,7 @@ async def resolve_fulfillment_location(
     """Resolve an owned address to its highest-priority active fulfillment location."""
 
     address = await get_address(session, user_id=user_id, address_id=address_id)
-    return await session.scalar(
+    location = await session.scalar(
         select(FulfillmentLocation)
         .join(FulfillmentCoverage, FulfillmentCoverage.location_id == FulfillmentLocation.id)
         .where(
@@ -242,6 +301,16 @@ async def resolve_fulfillment_location(
         )
         .order_by(FulfillmentCoverage.priority, FulfillmentLocation.id)
     )
+    logger.info(
+        "customer_address_serviceability_checked",
+        extra={
+            "address_id": str(address_id),
+            "user_id": str(user_id),
+            "fulfillment_location_id": str(location.id) if location is not None else None,
+            "serviceable": location is not None,
+        },
+    )
+    return location
 
 
 async def _clear_default_address(
@@ -261,3 +330,149 @@ async def _clear_default_address(
     if except_id is not None:
         statement = statement.where(CustomerAddress.id != except_id)
     await session.execute(statement)
+
+
+async def list_coverage(
+    session: AsyncSession,
+    *,
+    location_id: UUID | None = None,
+    active_only: bool = False,
+) -> Sequence[FulfillmentCoverage]:
+    """List internal coverage records in deterministic operational order."""
+
+    statement = select(FulfillmentCoverage)
+    if location_id is not None:
+        statement = statement.where(FulfillmentCoverage.location_id == location_id)
+    if active_only:
+        statement = statement.where(FulfillmentCoverage.is_active.is_(True))
+    result = await session.scalars(
+        statement.order_by(
+            FulfillmentCoverage.location_id,
+            FulfillmentCoverage.priority,
+            FulfillmentCoverage.postal_code,
+            FulfillmentCoverage.id,
+        )
+    )
+    return result.all()
+
+
+async def upsert_coverage(
+    session: AsyncSession,
+    *,
+    location_id: UUID,
+    postal_code: str,
+    priority: int = 0,
+    is_active: bool = True,
+) -> FulfillmentCoverage:
+    """Create or update internal postal-code coverage for a fulfillment location."""
+
+    if priority < 0:
+        raise InvalidCoverageRequest
+    try:
+        normalized_postal_code = normalize_postal_code(postal_code)
+    except InvalidAddressRequest:
+        raise InvalidCoverageRequest from None
+    async with transaction(session):
+        location = await session.scalar(
+            select(FulfillmentLocation)
+            .where(FulfillmentLocation.id == location_id)
+            .with_for_update()
+        )
+        if location is None:
+            raise FulfillmentLocationNotFound
+        coverage = await session.scalar(
+            select(FulfillmentCoverage)
+            .where(
+                FulfillmentCoverage.location_id == location_id,
+                FulfillmentCoverage.postal_code == normalized_postal_code,
+            )
+            .with_for_update()
+        )
+        if coverage is None:
+            coverage = FulfillmentCoverage(
+                location_id=location_id,
+                postal_code=normalized_postal_code,
+                priority=priority,
+                is_active=is_active,
+            )
+            session.add(coverage)
+        else:
+            coverage.priority = priority
+            coverage.is_active = is_active
+        await session.flush()
+        _record_event(
+            session,
+            event_type="fulfillment.coverage.upserted",
+            aggregate_id=coverage.id,
+            payload={
+                "location_id": str(location_id),
+                "postal_code": coverage.postal_code,
+                "priority": coverage.priority,
+                "is_active": coverage.is_active,
+            },
+        )
+        logger.info(
+            "fulfillment_coverage_upserted",
+            extra={
+                "coverage_id": str(coverage.id),
+                "location_id": str(location_id),
+                "postal_code": coverage.postal_code,
+                "is_active": coverage.is_active,
+            },
+        )
+        return coverage
+
+
+async def deactivate_coverage(
+    session: AsyncSession,
+    *,
+    coverage_id: UUID,
+) -> FulfillmentCoverage:
+    """Deactivate internal postal-code coverage idempotently."""
+
+    async with transaction(session):
+        coverage = await session.scalar(
+            select(FulfillmentCoverage)
+            .where(FulfillmentCoverage.id == coverage_id)
+            .with_for_update()
+        )
+        if coverage is None:
+            raise CoverageNotFound
+        if coverage.is_active:
+            coverage.is_active = False
+            await session.flush()
+            _record_event(
+                session,
+                event_type="fulfillment.coverage.deactivated",
+                aggregate_id=coverage.id,
+                payload={"location_id": str(coverage.location_id)},
+            )
+            logger.info(
+                "fulfillment_coverage_deactivated",
+                extra={
+                    "coverage_id": str(coverage.id),
+                    "location_id": str(coverage.location_id),
+                },
+            )
+        return coverage
+
+
+def _record_event(
+    session: AsyncSession,
+    *,
+    event_type: str,
+    aggregate_id: UUID,
+    payload: dict[str, object],
+) -> None:
+    session.add(
+        OutboxEvent(
+            aggregate_type=(
+                "customer_address"
+                if event_type.startswith("customer.address.")
+                else "fulfillment_coverage"
+            ),
+            aggregate_id=aggregate_id,
+            event_type=event_type,
+            payload=payload,
+        )
+    )
