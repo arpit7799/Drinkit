@@ -2,7 +2,7 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 4 status
+## Phase 5 status
 
 Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
 email/password authentication, Argon2id password hashing, persisted devices,
@@ -14,6 +14,9 @@ and catalog administration remain future phases. Phase 4 adds fulfillment
 locations, PostgreSQL inventory balances, idempotent stock adjustments, and
 concurrency-safe expiring reservations. Pricing, carts, orders, payments,
 delivery, and operator administration remain future phases.
+Phase 5 adds authenticated customer addresses and postal-code-based fulfillment
+serviceability. Geographic routing, pricing, carts, orders, payments, delivery,
+and operator administration remain future phases.
 
 ## Local setup
 
@@ -67,6 +70,12 @@ Inventory mutation is currently an internal service boundary, not a public
 HTTP endpoint. See [`docs/inventory.md`](docs/inventory.md) for locking,
 idempotency, reservation, and expiry behavior.
 
+Authenticated address and serviceability endpoints are under
+`/api/v1/addresses/`. See
+[`docs/addresses-and-serviceability.md`](docs/addresses-and-serviceability.md)
+for ownership, normalization, default-address, and fulfillment-selection
+behavior.
+
 ## Verification
 
 Unit tests do not require PostgreSQL. Integration tests use a real PostgreSQL database configured through `TEST_DATABASE_URL` when `APP_ENV=test`:
@@ -103,13 +112,17 @@ drinkit_env/bin/python -m pytest -q
   sellable SKU/package identity. Pricing and inventory are separate domains.
 - Inventory balances are authoritative per fulfillment-location/variant pair;
   reservations and adjustments update them under PostgreSQL row locks.
+- Customer addresses are ownership-scoped and serviceability uses explicit
+  normalized postal-code coverage with deterministic fulfillment priority.
 
 See [`docs/database.md`](docs/database.md),
 [`docs/authentication.md`](docs/authentication.md),
 [`docs/catalog.md`](docs/catalog.md),
 [`docs/inventory.md`](docs/inventory.md),
+[`docs/addresses-and-serviceability.md`](docs/addresses-and-serviceability.md),
 [`docs/adr/0001-database-access-strategy.md`](docs/adr/0001-database-access-strategy.md),
 [`docs/adr/0002-authentication-session-strategy.md`](docs/adr/0002-authentication-session-strategy.md),
 [`docs/adr/0003-catalog-product-variant-boundary.md`](docs/adr/0003-catalog-product-variant-boundary.md),
-and [`docs/adr/0004-inventory-authority-and-locking.md`](docs/adr/0004-inventory-authority-and-locking.md)
-for the Phase 1 through Phase 4 decisions.
+[`docs/adr/0004-inventory-authority-and-locking.md`](docs/adr/0004-inventory-authority-and-locking.md),
+and [`docs/adr/0005-postal-coverage-serviceability.md`](docs/adr/0005-postal-coverage-serviceability.md)
+for the Phase 1 through Phase 5 decisions.

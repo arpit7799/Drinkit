@@ -38,4 +38,7 @@ async def get_current_user(
     )
     if user is None:
         raise InvalidAccessToken
+    # Authentication is a read-only dependency. End its implicit transaction
+    # so a protected mutation service can own the request transaction.
+    await session.commit()
     return user

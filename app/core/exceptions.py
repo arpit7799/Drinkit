@@ -65,3 +65,15 @@ class ReservationConflict(AppError):
     status_code = 409
     code = "reservation_conflict"
     message = "The inventory reservation conflicts with an existing request."
+
+
+class AddressNotFound(AppError):
+    status_code = 404
+    code = "address_not_found"
+    message = "The requested address was not found."
+
+
+class InvalidAddressRequest(AppError):
+    status_code = 400
+    code = "invalid_address_request"
+    message = "The address request is invalid."
