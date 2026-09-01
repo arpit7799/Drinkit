@@ -30,7 +30,7 @@ class VariantPrice(BaseModel):
             name="amount_minor_non_negative",
         ),
         CheckConstraint(
-            "length(currency_code) = 3 AND currency_code = upper(currency_code)",
+            "currency_code ~ '^[A-Z]{3}$'",
             name="currency_code_valid",
         ),
         CheckConstraint(

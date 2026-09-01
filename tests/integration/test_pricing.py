@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import delete, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.core.database import AsyncSessionFactory
@@ -200,3 +201,24 @@ async def test_pricing_rejects_invalid_requests_and_unknown_resources(
             )
         with pytest.raises(PriceNotFound):
             await deactivate_variant_price(session, price_id=uuid4())
+
+
+async def test_database_rejects_non_alphabetic_currency_code(
+    integration_engine: AsyncEngine,
+    pricing_scope: None,
+):
+    variant_id = await _seed_variant(integration_engine)
+
+    async with AsyncSessionFactory(bind=integration_engine) as session:
+        session.add(
+            VariantPrice(
+                id=uuid4(),
+                variant_id=variant_id,
+                currency_code="$$$",
+                amount_minor=100,
+                starts_at=datetime.now(UTC),
+            )
+        )
+        with pytest.raises(SQLAlchemyError):
+            await session.commit()
+        await session.rollback()

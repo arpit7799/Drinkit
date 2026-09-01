@@ -46,7 +46,7 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), server_default=sa.text("true"), nullable=False),
         sa.CheckConstraint("amount_minor >= 0", name="amount_minor_non_negative"),
         sa.CheckConstraint(
-            "length(currency_code) = 3 AND currency_code = upper(currency_code)",
+            "currency_code ~ '^[A-Z]{3}$'",
             name="currency_code_valid",
         ),
         sa.CheckConstraint(
