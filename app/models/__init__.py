@@ -10,6 +10,7 @@ from app.models.inventory import (
     StockAdjustment,
 )
 from app.models.outbox_event import OutboxEvent
+from app.models.pricing import VariantPrice
 
 __all__ = [
     "AuthSession",
@@ -25,4 +26,5 @@ __all__ = [
     "ProductVariant",
     "StockAdjustment",
     "User",
+    "VariantPrice",
 ]

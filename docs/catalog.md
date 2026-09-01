@@ -5,7 +5,7 @@
 Phase 3 introduces the read-only product catalog boundary for Drinkit. It
 provides hierarchical categories, customer-facing product identity, category
 membership, and sellable product variants/SKUs. It intentionally does not
-implement inventory, pricing, promotions, carts, search, recommendations,
+implement inventory, promotions, carts, search, recommendations,
 admin mutations, or age/jurisdiction enforcement.
 
 ## Persistence model
@@ -17,8 +17,8 @@ admin mutations, or age/jurisdiction enforcement.
 - `product_categories` allows a product to appear in multiple merchandising
   categories.
 - `product_variants` stores sellable SKU and package quantity data. A variant
-  is the future inventory and pricing join point, but those domains are not
-  coupled into this phase.
+  is the inventory and pricing join point; those domains remain separate from
+  the product identity model.
 
 PostgreSQL enforces:
 
@@ -47,9 +47,14 @@ age-verification or delivery-eligibility decision.
 - `GET /api/v1/catalog/products/{slug}`
   - returns one active product with active categories and variants;
   - inactive products and products without an active variant return `404`.
+- `GET /api/v1/catalog/variants/{variant_id}/price`
+  - returns the current active price in the requested currency;
+  - defaults to `INR` and normalizes the currency code to uppercase;
+  - returns `404` when the published variant has no effective price.
 
-Prices, stock, reservations, inventory availability, and delivery estimates are
-not returned by these endpoints. They will be joined in later domain slices.
+Stock, reservations, inventory availability, promotions, and delivery estimates
+are not returned by these endpoints. They will be joined in later domain
+slices.
 
 ## Operational rules
 

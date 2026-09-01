@@ -95,3 +95,21 @@ class InvalidCoverageRequest(AppError):
     status_code = 400
     code = "invalid_coverage_request"
     message = "The fulfillment coverage request is invalid."
+
+
+class VariantNotFound(AppError):
+    status_code = 404
+    code = "variant_not_found"
+    message = "The requested product variant was not found."
+
+
+class PriceNotFound(AppError):
+    status_code = 404
+    code = "price_not_found"
+    message = "The requested price was not found."
+
+
+class InvalidPricingRequest(AppError):
+    status_code = 400
+    code = "invalid_pricing_request"
+    message = "The pricing request is invalid."

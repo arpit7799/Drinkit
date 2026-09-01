@@ -2,7 +2,7 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 5 status
+## Phase 6 status
 
 Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
 email/password authentication, Argon2id password hashing, persisted devices,
@@ -15,8 +15,10 @@ locations, PostgreSQL inventory balances, idempotent stock adjustments, and
 concurrency-safe expiring reservations. Pricing, carts, orders, payments,
 delivery, and operator administration remain future phases.
 Phase 5 adds authenticated customer addresses and postal-code-based fulfillment
-serviceability. Geographic routing, pricing, carts, orders, payments, delivery,
-and operator administration remain future phases.
+serviceability. Phase 6 adds time-effective variant pricing in integer minor
+units and a read-only current-price catalog endpoint. Geographic routing, carts,
+orders, payments, delivery, promotions, taxes, and operator administration
+remain future phases.
 
 ## Local setup
 
@@ -75,6 +77,12 @@ Authenticated address and serviceability endpoints are under
 [`docs/addresses-and-serviceability.md`](docs/addresses-and-serviceability.md)
 for ownership, normalization, default-address, and fulfillment-selection
 behavior.
+
+Current variant prices are available under
+`/api/v1/catalog/variants/{variant_id}/price`. See
+[`docs/pricing.md`](docs/pricing.md) and
+[`docs/adr/0006-variant-pricing.md`](docs/adr/0006-variant-pricing.md) for the
+minor-unit and effective-window pricing contract.
 
 ## Verification
 
