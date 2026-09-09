@@ -2,6 +2,7 @@
 
 from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import AuthSession, Device, User
+from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Category, Product, ProductVariant
 from app.models.inventory import (
     FulfillmentLocation,
@@ -14,6 +15,7 @@ from app.models.pricing import VariantPrice
 
 __all__ = [
     "AuthSession",
+    "CartItem",
     "Category",
     "CustomerAddress",
     "Device",
@@ -25,6 +27,7 @@ __all__ = [
     "Product",
     "ProductVariant",
     "StockAdjustment",
+    "ShoppingCart",
     "User",
     "VariantPrice",
 ]

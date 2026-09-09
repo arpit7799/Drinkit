@@ -113,3 +113,27 @@ class InvalidPricingRequest(AppError):
     status_code = 400
     code = "invalid_pricing_request"
     message = "The pricing request is invalid."
+
+
+class CartNotFound(AppError):
+    status_code = 404
+    code = "cart_not_found"
+    message = "The requested cart was not found."
+
+
+class CartItemNotFound(AppError):
+    status_code = 404
+    code = "cart_item_not_found"
+    message = "The requested cart item was not found."
+
+
+class InvalidCartRequest(AppError):
+    status_code = 400
+    code = "invalid_cart_request"
+    message = "The cart request is invalid."
+
+
+class CartCurrencyConflict(AppError):
+    status_code = 409
+    code = "cart_currency_conflict"
+    message = "The cart currency is fixed after cart creation."

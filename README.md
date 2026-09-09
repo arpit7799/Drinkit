@@ -2,7 +2,7 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 6 status
+## Phase 7 status
 
 Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
 email/password authentication, Argon2id password hashing, persisted devices,
@@ -16,9 +16,11 @@ concurrency-safe expiring reservations. Pricing, carts, orders, payments,
 delivery, and operator administration remain future phases.
 Phase 5 adds authenticated customer addresses and postal-code-based fulfillment
 serviceability. Phase 6 adds time-effective variant pricing in integer minor
-units and a read-only current-price catalog endpoint. Geographic routing, carts,
-orders, payments, delivery, promotions, taxes, and operator administration
-remain future phases.
+units and a read-only current-price catalog endpoint. Phase 7 adds an
+authenticated customer cart with one active cart per customer, quantity
+mutation, integer-minor-unit subtotals, and price snapshots on cart lines.
+Orders, payments, delivery, promotions, taxes, legal eligibility, and operator
+administration remain future phases.
 
 ## Local setup
 
@@ -84,6 +86,11 @@ Current variant prices are available under
 [`docs/adr/0006-variant-pricing.md`](docs/adr/0006-variant-pricing.md) for the
 minor-unit and effective-window pricing contract.
 
+Authenticated carts are available under `/api/v1/cart` and
+`/api/v1/cart/items`. See [`docs/cart.md`](docs/cart.md) and
+[`docs/adr/0007-cart-price-snapshots.md`](docs/adr/0007-cart-price-snapshots.md)
+for ownership, price-snapshot, subtotal, and transaction behavior.
+
 ## Verification
 
 Unit tests do not require PostgreSQL. Integration tests use a real PostgreSQL database configured through `TEST_DATABASE_URL` when `APP_ENV=test`:
@@ -122,15 +129,19 @@ drinkit_env/bin/python -m pytest -q
   reservations and adjustments update them under PostgreSQL row locks.
 - Customer addresses are ownership-scoped and serviceability uses explicit
   normalized postal-code coverage with deterministic fulfillment priority.
+- Cart lines are ownership-scoped, variant-keyed, and store integer price
+  snapshots; cart mutations do not reserve inventory or create orders.
 
 See [`docs/database.md`](docs/database.md),
 [`docs/authentication.md`](docs/authentication.md),
 [`docs/catalog.md`](docs/catalog.md),
 [`docs/inventory.md`](docs/inventory.md),
 [`docs/addresses-and-serviceability.md`](docs/addresses-and-serviceability.md),
+[`docs/cart.md`](docs/cart.md),
 [`docs/adr/0001-database-access-strategy.md`](docs/adr/0001-database-access-strategy.md),
 [`docs/adr/0002-authentication-session-strategy.md`](docs/adr/0002-authentication-session-strategy.md),
 [`docs/adr/0003-catalog-product-variant-boundary.md`](docs/adr/0003-catalog-product-variant-boundary.md),
 [`docs/adr/0004-inventory-authority-and-locking.md`](docs/adr/0004-inventory-authority-and-locking.md),
 and [`docs/adr/0005-postal-coverage-serviceability.md`](docs/adr/0005-postal-coverage-serviceability.md)
-for the Phase 1 through Phase 5 decisions.
+and [`docs/adr/0007-cart-price-snapshots.md`](docs/adr/0007-cart-price-snapshots.md)
+for the Phase 1 through Phase 7 decisions.

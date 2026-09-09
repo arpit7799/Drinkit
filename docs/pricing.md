@@ -58,7 +58,8 @@ money metadata, but no customer address information.
 ## Deferred work
 
 Operator authorization, price books, promotions, tax calculation, jurisdiction
-rules, cart snapshots, and order-time price freezing must be designed before
-pricing writes become public administration APIs. Cart and checkout workflows
-must copy the selected price into their own immutable line snapshots rather
-than recomputing historical totals from mutable catalog prices.
+rules, and order-time price freezing must be designed before pricing writes
+become public administration APIs. The Phase 7 cart workflow copies the
+selected price into its own line snapshot; a future checkout workflow must
+create immutable order-line snapshots rather than recomputing historical
+totals from mutable catalog prices.
