@@ -16,6 +16,7 @@ from app.core.exceptions import (
 from app.models.auth import User
 from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Product, ProductVariant
+from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.modules.cart.service import (
     add_cart_item,
@@ -34,6 +35,8 @@ async def cart_scope(integration_engine: AsyncEngine) -> AsyncIterator[None]:
     async with AsyncSessionFactory(bind=integration_engine) as session:
         await session.execute(delete(CartItem))
         await session.execute(delete(ShoppingCart))
+        await session.execute(delete(OrderLine))
+        await session.execute(delete(Order))
         await session.execute(delete(ProductVariant))
         await session.execute(delete(Product))
         await session.execute(delete(User))

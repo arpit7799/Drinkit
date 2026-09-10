@@ -11,8 +11,10 @@ from app.core.database import AsyncSessionFactory
 from app.core.exceptions import FulfillmentLocationNotFound, InvalidCoverageRequest
 from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import User
+from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Product, ProductVariant
 from app.models.inventory import FulfillmentLocation
+from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.modules.addresses.service import (
     AddressNotFound,
@@ -33,6 +35,10 @@ pytestmark = pytest.mark.integration
 async def address_scope(integration_engine: AsyncEngine) -> AsyncIterator[None]:
     yield
     async with AsyncSessionFactory(bind=integration_engine) as session:
+        await session.execute(delete(OrderLine))
+        await session.execute(delete(Order))
+        await session.execute(delete(CartItem))
+        await session.execute(delete(ShoppingCart))
         await session.execute(delete(CustomerAddress))
         await session.execute(delete(FulfillmentCoverage))
         await session.execute(delete(FulfillmentLocation))

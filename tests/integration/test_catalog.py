@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from app.core.database import AsyncSessionFactory, get_db
 from app.main import app
+from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Category, Product, ProductVariant, product_categories
+from app.models.orders import Order, OrderLine
 
 pytestmark = pytest.mark.integration
 
@@ -31,6 +33,10 @@ async def catalog_client(integration_engine: AsyncEngine) -> AsyncIterator[Async
     finally:
         app.dependency_overrides.clear()
         async with AsyncSessionFactory(bind=integration_engine) as session:
+            await session.execute(delete(OrderLine))
+            await session.execute(delete(Order))
+            await session.execute(delete(CartItem))
+            await session.execute(delete(ShoppingCart))
             await session.execute(delete(product_categories))
             await session.execute(delete(Product))
             await session.execute(delete(Category))

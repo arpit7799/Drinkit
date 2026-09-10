@@ -2,7 +2,7 @@
 
 Drinkit is being built as a modular monolith for premium quick-commerce delivery of beverages, snacks, ice, party supplies, and recovery products.
 
-## Phase 7 status
+## Phase 8 status
 
 Phase 1 established the PostgreSQL and SQLAlchemy foundation. Phase 2 adds
 email/password authentication, Argon2id password hashing, persisted devices,
@@ -19,8 +19,12 @@ serviceability. Phase 6 adds time-effective variant pricing in integer minor
 units and a read-only current-price catalog endpoint. Phase 7 adds an
 authenticated customer cart with one active cart per customer, quantity
 mutation, integer-minor-unit subtotals, and price snapshots on cart lines.
-Orders, payments, delivery, promotions, taxes, legal eligibility, and operator
-administration remain future phases.
+Phase 8 adds checkout: cart-to-order conversion with frozen price snapshots,
+15-minute inventory reservations at the serviceable fulfillment location,
+payment provider abstraction (Razorpay/Stripe/PhonePe stubs), and order
+payment status transitions. Delivery scheduling, age/jurisdiction enforcement,
+promotions, tax engine, webhook handlers, operator admin, and refunds remain
+future phases.
 
 ## Local setup
 

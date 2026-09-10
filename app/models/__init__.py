@@ -10,6 +10,7 @@ from app.models.inventory import (
     InventoryReservation,
     StockAdjustment,
 )
+from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.models.pricing import VariantPrice
 
@@ -23,6 +24,8 @@ __all__ = [
     "FulfillmentLocation",
     "InventoryBalance",
     "InventoryReservation",
+    "Order",
+    "OrderLine",
     "OutboxEvent",
     "Product",
     "ProductVariant",

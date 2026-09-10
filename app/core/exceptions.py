@@ -137,3 +137,51 @@ class CartCurrencyConflict(AppError):
     status_code = 409
     code = "cart_currency_conflict"
     message = "The cart currency is fixed after cart creation."
+
+
+class OrderNotFound(AppError):
+    status_code = 404
+    code = "order_not_found"
+    message = "The requested order was not found."
+
+
+class OrderLineNotFound(AppError):
+    status_code = 404
+    code = "order_line_not_found"
+    message = "The requested order line was not found."
+
+
+class InvalidOrderRequest(AppError):
+    status_code = 400
+    code = "invalid_order_request"
+    message = "The order request is invalid."
+
+
+class OrderStatusConflict(AppError):
+    status_code = 409
+    code = "order_status_conflict"
+    message = "The order status does not allow this operation."
+
+
+class EmptyCartError(AppError):
+    status_code = 409
+    code = "empty_cart"
+    message = "Cannot create an order from an empty cart."
+
+
+class AddressOwnershipError(AppError):
+    status_code = 409
+    code = "address_ownership_error"
+    message = "The address does not belong to the customer."
+
+
+class InsufficientInventoryForOrder(AppError):
+    status_code = 409
+    code = "insufficient_inventory_for_order"
+    message = "There is not enough available inventory to fulfill the order."
+
+
+class PaymentProviderError(AppError):
+    status_code = 400
+    code = "payment_provider_error"
+    message = "The payment provider returned an error."

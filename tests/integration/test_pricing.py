@@ -13,7 +13,9 @@ from app.core.exceptions import (
     PriceNotFound,
     VariantNotFound,
 )
+from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Product, ProductVariant
+from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.models.pricing import VariantPrice
 from app.modules.pricing.service import (
@@ -29,6 +31,10 @@ pytestmark = pytest.mark.integration
 async def pricing_scope(integration_engine: AsyncEngine):
     yield
     async with AsyncSessionFactory(bind=integration_engine) as session:
+        await session.execute(delete(OrderLine))
+        await session.execute(delete(Order))
+        await session.execute(delete(CartItem))
+        await session.execute(delete(ShoppingCart))
         await session.execute(delete(VariantPrice))
         await session.execute(delete(ProductVariant))
         await session.execute(delete(Product))

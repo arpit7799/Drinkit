@@ -117,6 +117,7 @@ class InventoryReservation(BaseModel):
             name="uq_inventory_reservations_request",
         ),
         Index("ix_inventory_reservations_expiring", "status", "expires_at"),
+        Index("ix_inventory_reservations_order", "order_id"),
     )
 
     location_id: Mapped[UUID] = mapped_column(
@@ -133,3 +134,9 @@ class InventoryReservation(BaseModel):
     quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'active'"))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    order_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("orders.id", ondelete="SET NULL"),
+        nullable=True,
+    )
