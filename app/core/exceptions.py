@@ -185,3 +185,27 @@ class PaymentProviderError(AppError):
     status_code = 400
     code = "payment_provider_error"
     message = "The payment provider returned an error."
+
+
+class DeliveryNotFound(AppError):
+    status_code = 404
+    code = "delivery_not_found"
+    message = "The requested delivery was not found."
+
+
+class DeliverySlotNotFound(AppError):
+    status_code = 404
+    code = "delivery_slot_not_found"
+    message = "The requested delivery slot was not found."
+
+
+class CourierNotFound(AppError):
+    status_code = 404
+    code = "courier_not_found"
+    message = "The requested courier was not found."
+
+
+class InvalidDeliveryRequest(AppError):
+    status_code = 400
+    code = "invalid_delivery_request"
+    message = "The delivery request is invalid."

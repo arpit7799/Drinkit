@@ -4,6 +4,7 @@ from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import AuthSession, Device, User
 from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Category, Product, ProductVariant
+from app.models.delivery import Courier, Delivery, DeliverySlot
 from app.models.inventory import (
     FulfillmentLocation,
     InventoryBalance,
@@ -18,8 +19,11 @@ __all__ = [
     "AuthSession",
     "CartItem",
     "Category",
+    "Courier",
     "CustomerAddress",
     "Device",
+    "Delivery",
+    "DeliverySlot",
     "FulfillmentCoverage",
     "FulfillmentLocation",
     "InventoryBalance",
