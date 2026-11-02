@@ -1,12 +1,13 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.main import app
 
 pytestmark = pytest.mark.integration
 
 
-async def test_readiness_reports_postgresql_as_ready():
+async def test_readiness_reports_postgresql_as_ready(integration_engine: AsyncEngine):
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://testserver",
