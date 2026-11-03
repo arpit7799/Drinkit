@@ -13,11 +13,13 @@ from app.modules.orders.websocket import router as tracking_router
 from app.modules.payments import webhooks_router
 from app.modules.pricing.router import router as pricing_router
 from app.modules.promotions.router import router as promotions_router
+from app.modules.search.router import router as search_router
 
 api_router = APIRouter()
 api_router.include_router(auth_router)
 api_router.include_router(addresses_router)
 api_router.include_router(catalog_router)
+api_router.include_router(search_router)
 api_router.include_router(cart_router)
 api_router.include_router(orders_router)
 api_router.include_router(tracking_router)
