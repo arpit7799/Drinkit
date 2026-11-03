@@ -36,6 +36,10 @@ from app.modules.compliance.service import (
     create_delivery_compliance_log,
     verify_alcohol_compliance,
 )
+from app.modules.memberships.service import (
+    evaluate_membership_order_benefits,
+    log_membership_order_benefits,
+)
 from app.modules.pricing.service import get_current_variant_price
 from app.modules.promotions.service import (
     apply_coupon_to_order,
@@ -142,7 +146,18 @@ async def create_order_from_cart(
         )
         tax_minor = tax_res.total_tax_minor
 
-        delivery_fee_minor = DELIVERY_FEE_MINOR
+        # Evaluate VIP membership benefits (free delivery threshold, points multiplier)
+        (
+            delivery_fee_minor,
+            fee_saved_minor,
+            points_multiplier,
+            active_membership,
+        ) = await evaluate_membership_order_benefits(
+            session,
+            customer_id=user_id,
+            order_subtotal_minor=subtotal_minor,
+            proposed_delivery_fee_minor=DELIVERY_FEE_MINOR,
+        )
 
         # Temporary total to determine max allowable points redemption
         discounted_subtotal = max(0, subtotal_minor - coupon_discount_minor)
@@ -201,13 +216,27 @@ async def create_order_from_cart(
                 points_to_redeem=actual_points,
             )
 
-        # Award loyalty points for confirmed order (1 point per ₹100 spent)
-        await award_loyalty_points(
+        # Award loyalty points for confirmed order (1 point per ₹100 spent, multiplied for VIPs)
+        base_points = total_minor // 10000
+        awarded_points = await award_loyalty_points(
             session,
             customer_id=user_id,
             order_id=order.id,
             order_total_minor=total_minor,
+            multiplier=points_multiplier,
         )
+        bonus_points = max(0, awarded_points - base_points)
+
+        # Log VIP benefits if active membership
+        if active_membership:
+            await log_membership_order_benefits(
+                session,
+                customer_id=user_id,
+                membership_id=active_membership.id,
+                order_id=order.id,
+                delivery_fee_saved_minor=fee_saved_minor,
+                bonus_points_awarded=bonus_points,
+            )
 
         # Persist order lines
         for line in order_lines:

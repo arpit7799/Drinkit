@@ -38,6 +38,10 @@ from app.models.party import (
     PartySession,
 )
 from app.modules.addresses.service import resolve_fulfillment_location
+from app.modules.memberships.service import (
+    evaluate_membership_order_benefits,
+    log_membership_order_benefits,
+)
 from app.modules.party.schemas import (
     PartyCartItemResponse,
     PartyCheckoutResponse,
@@ -610,7 +614,18 @@ async def checkout_party_cart(
         )
         tax_minor = tax_res.total_tax_minor
 
-        delivery_fee_minor = DELIVERY_FEE_MINOR
+        # Evaluate VIP membership benefits for host
+        (
+            delivery_fee_minor,
+            fee_saved_minor,
+            points_multiplier,
+            active_membership,
+        ) = await evaluate_membership_order_benefits(
+            session,
+            customer_id=host_user_id,
+            order_subtotal_minor=subtotal_minor,
+            proposed_delivery_fee_minor=DELIVERY_FEE_MINOR,
+        )
         total_minor = subtotal_minor + tax_minor + delivery_fee_minor
 
         # Apply coupon & loyalty
@@ -656,13 +671,27 @@ async def checkout_party_cart(
             location_id=location.id,
         )
 
-        # Award host loyalty points
-        await award_loyalty_points(
+        # Award host loyalty points (with VIP multiplier if active)
+        base_points = total_minor // 10000
+        awarded_points = await award_loyalty_points(
             session,
             customer_id=host_user_id,
             order_id=order.id,
             order_total_minor=total_minor,
+            multiplier=points_multiplier,
         )
+        bonus_points = max(0, awarded_points - base_points)
+
+        # Log VIP benefits if host has active membership
+        if active_membership:
+            await log_membership_order_benefits(
+                session,
+                customer_id=host_user_id,
+                membership_id=active_membership.id,
+                order_id=order.id,
+                delivery_fee_saved_minor=fee_saved_minor,
+                bonus_points_awarded=bonus_points,
+            )
 
         # Transition party status
         party.status = PartySessionStatus.ORDERED.value

@@ -2,6 +2,7 @@
 
 import logging
 from datetime import UTC, datetime
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -173,10 +174,15 @@ async def award_loyalty_points(
     customer_id: UUID,
     order_id: UUID | None = None,
     order_total_minor: int,
+    multiplier: Decimal = Decimal("1.0"),
 ) -> int:
-    """Award Liver Points on order completion (1 point per ₹100 spent)."""
+    """Award Liver Points on order completion (1 point per ₹100 spent, multiplied for VIPs)."""
     # Award 1 point per 10,000 minor units (₹100)
-    points_to_award = order_total_minor // 10000
+    base_points = order_total_minor // 10000
+    if base_points <= 0:
+        return 0
+
+    points_to_award = int(Decimal(base_points) * multiplier)
     if points_to_award <= 0:
         return 0
 

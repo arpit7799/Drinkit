@@ -17,6 +17,11 @@ from app.models.compliance import (
     StateAlcoholRegulation,
 )
 from app.models.inventory import InventoryReservation
+from app.models.membership import (
+    CustomerMembership,
+    MembershipBenefitLog,
+    MembershipPlan,
+)
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.models.party import (
@@ -58,6 +63,9 @@ async def integration_engine() -> AsyncEngine:
     yield engine
 
     async with engine.begin() as connection:
+        await connection.execute(delete(MembershipBenefitLog))
+        await connection.execute(delete(CustomerMembership))
+        await connection.execute(delete(MembershipPlan))
         await connection.execute(delete(DeliveryComplianceLog))
         await connection.execute(delete(CustomerKYC))
         await connection.execute(delete(DryDaySchedule))

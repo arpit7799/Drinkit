@@ -19,6 +19,11 @@ from app.models.inventory import (
     InventoryReservation,
     StockAdjustment,
 )
+from app.models.membership import (
+    CustomerMembership,
+    MembershipBenefitLog,
+    MembershipPlan,
+)
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
 from app.models.party import (
@@ -53,6 +58,7 @@ __all__ = [
     "Courier",
     "CustomerAddress",
     "CustomerKYC",
+    "CustomerMembership",
     "Delivery",
     "DeliveryComplianceLog",
     "DeliverySlot",
@@ -69,6 +75,8 @@ __all__ = [
     "LoyaltyAccount",
     "LoyaltyTransaction",
     "LoyaltyTransactionType",
+    "MembershipBenefitLog",
+    "MembershipPlan",
     "Order",
     "OrderFulfillmentTask",
     "OrderLine",
