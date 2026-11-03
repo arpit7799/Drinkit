@@ -257,3 +257,51 @@ class TaxCalculationError(AppError):
     status_code = 400
     code = "tax_calculation_error"
     message = "Unable to compute taxes for the requested jurisdiction."
+
+
+class KYCRequiredForAlcohol(AppError):
+    status_code = 403
+    code = "kyc_required_for_alcohol"
+    message = "Government ID / Age verification is required to purchase alcoholic beverages."
+
+
+class UnderageAlcoholPurchase(AppError):
+    status_code = 403
+    code = "underage_alcohol_purchase"
+    message = "You do not meet the minimum legal drinking age for the delivery jurisdiction."
+
+
+class DryDayRestriction(AppError):
+    status_code = 403
+    code = "dry_day_restriction"
+    message = "Alcohol sale and delivery is prohibited on dry days in this jurisdiction."
+
+
+class AlcoholHoursRestriction(AppError):
+    status_code = 403
+    code = "alcohol_hours_restriction"
+    message = "Alcohol delivery is not permitted outside licensed statutory operating hours."
+
+
+class AlcoholVolumeExceeded(AppError):
+    status_code = 400
+    code = "alcohol_volume_exceeded"
+    message = "The order exceeds the statutory maximum spirits volume permitted per delivery."
+
+
+class InvalidHandoverOTP(AppError):
+    status_code = 400
+    code = "invalid_handover_otp"
+    message = "The delivery handover OTP is invalid or expired."
+
+
+class DeliveryComplianceNotFound(AppError):
+    status_code = 404
+    code = "delivery_compliance_not_found"
+    message = "Compliance record for this order was not found."
+
+
+class StateRegulationNotFound(AppError):
+    status_code = 404
+    code = "state_regulation_not_found"
+    message = "Regulations not configured for the requested state."

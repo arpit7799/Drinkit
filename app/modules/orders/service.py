@@ -32,6 +32,10 @@ from app.modules.addresses.service import resolve_fulfillment_location
 from app.modules.cart.service import (
     _load_cart,
 )
+from app.modules.compliance.service import (
+    create_delivery_compliance_log,
+    verify_alcohol_compliance,
+)
 from app.modules.pricing.service import get_current_variant_price
 from app.modules.promotions.service import (
     apply_coupon_to_order,
@@ -90,6 +94,23 @@ async def create_order_from_cart(
 
         # Freeze line prices and build order lines
         order_lines = await _build_order_lines(session, cart, location)
+
+        # Check alcohol compliance (KYC, legal drinking age, operating hours, dry days)
+        variant_ids = [line.variant_id for line in order_lines]
+        variants_res = await session.scalars(
+            select(ProductVariant)
+            .options(selectinload(ProductVariant.product))
+            .where(ProductVariant.id.in_(variant_ids))
+        )
+        has_alcohol = any(v.product.is_alcoholic for v in variants_res.all())
+        if has_alcohol:
+            state_code = address.state[:2].upper() if address.state else "MH"
+            await verify_alcohol_compliance(
+                session,
+                customer_id=user_id,
+                state_code=state_code,
+                has_alcohol=True,
+            )
 
         # Compute subtotal
         subtotal_minor = sum(line.line_total_minor for line in order_lines)
@@ -151,6 +172,14 @@ async def create_order_from_cart(
         )
         session.add(order)
         await session.flush()
+
+        # Initialize delivery compliance log for alcohol orders
+        if has_alcohol:
+            await create_delivery_compliance_log(
+                session,
+                order_id=order.id,
+                customer_id=user_id,
+            )
 
         # Persist coupon usage if coupon was applied
         if coupon is not None and coupon_discount_minor > 0:

@@ -4,6 +4,14 @@ from app.models.address import CustomerAddress, FulfillmentCoverage
 from app.models.auth import AuthSession, Device, User
 from app.models.cart import CartItem, ShoppingCart
 from app.models.catalog import Category, Product, ProductVariant
+from app.models.compliance import (
+    CustomerKYC,
+    DeliveryComplianceLog,
+    DryDaySchedule,
+    GovtIdType,
+    KYCStatus,
+    StateAlcoholRegulation,
+)
 from app.models.delivery import Courier, Delivery, DeliverySlot
 from app.models.inventory import (
     FulfillmentLocation,
@@ -36,14 +44,19 @@ __all__ = [
     "CouponUsage",
     "Courier",
     "CustomerAddress",
-    "Device",
+    "CustomerKYC",
     "Delivery",
+    "DeliveryComplianceLog",
     "DeliverySlot",
+    "Device",
     "DiscountType",
+    "DryDaySchedule",
     "FulfillmentCoverage",
     "FulfillmentLocation",
+    "GovtIdType",
     "InventoryBalance",
     "InventoryReservation",
+    "KYCStatus",
     "LoyaltyAccount",
     "LoyaltyTransaction",
     "LoyaltyTransactionType",
@@ -52,6 +65,7 @@ __all__ = [
     "OutboxEvent",
     "Product",
     "ProductVariant",
+    "StateAlcoholRegulation",
     "StockAdjustment",
     "ShoppingCart",
     "TaxCategory",

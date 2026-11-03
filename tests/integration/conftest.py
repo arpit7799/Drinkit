@@ -10,6 +10,12 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.core.database import Base
 from app.models.cart import CartItem, ShoppingCart
+from app.models.compliance import (
+    CustomerKYC,
+    DeliveryComplianceLog,
+    DryDaySchedule,
+    StateAlcoholRegulation,
+)
 from app.models.inventory import InventoryReservation
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
@@ -44,6 +50,10 @@ async def integration_engine() -> AsyncEngine:
     yield engine
 
     async with engine.begin() as connection:
+        await connection.execute(delete(DeliveryComplianceLog))
+        await connection.execute(delete(CustomerKYC))
+        await connection.execute(delete(DryDaySchedule))
+        await connection.execute(delete(StateAlcoholRegulation))
         await connection.execute(delete(CouponUsage))
         await connection.execute(delete(Coupon))
         await connection.execute(delete(LoyaltyTransaction))

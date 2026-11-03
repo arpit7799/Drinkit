@@ -7,6 +7,7 @@ from app.modules.addresses.router import router as addresses_router
 from app.modules.auth.router import router as auth_router
 from app.modules.cart.router import router as cart_router
 from app.modules.catalog.router import router as catalog_router
+from app.modules.compliance.router import router as compliance_router
 from app.modules.orders.router import router as orders_router
 from app.modules.orders.websocket import router as tracking_router
 from app.modules.payments import webhooks_router
@@ -21,6 +22,7 @@ api_router.include_router(cart_router)
 api_router.include_router(orders_router)
 api_router.include_router(tracking_router)
 api_router.include_router(promotions_router)
+api_router.include_router(compliance_router)
 api_router.include_router(webhooks_router)
 api_router.include_router(pricing_router)
 api_router.include_router(health_router)
