@@ -127,8 +127,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def transaction(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     """Provide the standard service-owned transaction boundary."""
 
-    async with session.begin():
-        yield session
+    if session.in_transaction():
+        async with session.begin_nested():
+            yield session
+    else:
+        async with session.begin():
+            yield session
 
 
 @contextmanager

@@ -305,3 +305,33 @@ class StateRegulationNotFound(AppError):
     status_code = 404
     code = "state_regulation_not_found"
     message = "Regulations not configured for the requested state."
+
+
+class WarehouseTaskNotFound(AppError):
+    status_code = 404
+    code = "warehouse_task_not_found"
+    message = "The requested warehouse fulfillment task was not found."
+
+
+class WarehouseTaskConflict(AppError):
+    status_code = 409
+    code = "warehouse_task_conflict"
+    message = "The fulfillment task status or assignment conflicts with this action."
+
+
+class WarehouseBinNotFound(AppError):
+    status_code = 404
+    code = "warehouse_bin_not_found"
+    message = "The requested warehouse bin was not found."
+
+
+class InvalidWarehouseRequest(AppError):
+    status_code = 400
+    code = "invalid_warehouse_request"
+    message = "The warehouse operation request is invalid."
+
+
+class WarehouseItemNotFound(AppError):
+    status_code = 404
+    code = "warehouse_item_not_found"
+    message = "The requested variant was not found in this fulfillment task."

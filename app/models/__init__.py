@@ -34,6 +34,7 @@ from app.models.promotions_tax import (
     TaxJurisdiction,
     TaxRate,
 )
+from app.models.warehouse import FulfillmentTaskItem, OrderFulfillmentTask, WarehouseBin
 
 __all__ = [
     "AuthSession",
@@ -53,6 +54,7 @@ __all__ = [
     "DryDaySchedule",
     "FulfillmentCoverage",
     "FulfillmentLocation",
+    "FulfillmentTaskItem",
     "GovtIdType",
     "InventoryBalance",
     "InventoryReservation",
@@ -61,6 +63,7 @@ __all__ = [
     "LoyaltyTransaction",
     "LoyaltyTransactionType",
     "Order",
+    "OrderFulfillmentTask",
     "OrderLine",
     "OutboxEvent",
     "Product",
@@ -73,4 +76,5 @@ __all__ = [
     "TaxRate",
     "User",
     "VariantPrice",
+    "WarehouseBin",
 ]

@@ -44,6 +44,7 @@ from app.modules.promotions.service import (
     validate_coupon,
 )
 from app.modules.promotions.tax import calculate_order_taxes
+from app.modules.warehouse.service import create_fulfillment_task_for_order
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,13 @@ async def create_order_from_cart(
         # Clear the cart (lines will cascade delete)
         for item in cart.items:
             await session.delete(item)
+
+        # Create dark-store fulfillment task for picking and packing
+        await create_fulfillment_task_for_order(
+            session,
+            order_id=order.id,
+            location_id=location.id,
+        )
 
         # Emit outbox events
         _record_order_event(

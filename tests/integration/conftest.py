@@ -27,6 +27,7 @@ from app.models.promotions_tax import (
     TaxJurisdiction,
     TaxRate,
 )
+from app.models.warehouse import FulfillmentTaskItem, OrderFulfillmentTask, WarehouseBin
 
 
 @pytest_asyncio.fixture(scope="module")
@@ -60,6 +61,9 @@ async def integration_engine() -> AsyncEngine:
         await connection.execute(delete(LoyaltyAccount))
         await connection.execute(delete(TaxRate))
         await connection.execute(delete(TaxJurisdiction))
+        await connection.execute(delete(FulfillmentTaskItem))
+        await connection.execute(delete(OrderFulfillmentTask))
+        await connection.execute(delete(WarehouseBin))
         await connection.execute(delete(OrderLine))
         await connection.execute(delete(Order))
         await connection.execute(delete(CartItem))
