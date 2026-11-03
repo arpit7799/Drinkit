@@ -10,12 +10,14 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.database import dispose_engines
 from app.core.exceptions import AppError
+from app.core.redis import close_redis
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
     await dispose_engines()
+    await close_redis()
 
 
 settings = get_settings()

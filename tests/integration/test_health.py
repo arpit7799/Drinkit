@@ -15,7 +15,7 @@ async def test_readiness_reports_postgresql_as_ready(integration_engine: AsyncEn
         response = await client.get("/api/v1/health/ready")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ready",
-        "checks": {"postgres": "up"},
-    }
+    data = response.json()
+    assert data["status"] == "ready"
+    assert data["checks"]["postgres"] == "up"
+    assert data["checks"]["redis"] in ("up", "down")

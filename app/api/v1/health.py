@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_db
+from app.core.redis import check_redis
 
 router = APIRouter(prefix="/health", tags=["health"])
 
@@ -22,12 +23,20 @@ async def liveness() -> dict[str, str]:
 async def readiness(session: AsyncSession = Depends(get_db)) -> dict[str, object]:
     """Readiness requires a successful PostgreSQL connectivity check."""
 
+    checks: dict[str, str] = {}
     try:
         await session.execute(text("SELECT 1"))
+        checks["postgres"] = "up"
     except SQLAlchemyError as exc:
+        checks["postgres"] = "down"
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"status": "not_ready", "checks": {"postgres": "down"}},
+            detail={"status": "not_ready", "checks": checks},
         ) from exc
 
-    return {"status": "ready", "checks": {"postgres": "up"}}
+    if await check_redis():
+        checks["redis"] = "up"
+    else:
+        checks["redis"] = "down"
+
+    return {"status": "ready", "checks": checks}
