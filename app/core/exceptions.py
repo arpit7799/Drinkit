@@ -209,3 +209,51 @@ class InvalidDeliveryRequest(AppError):
     status_code = 400
     code = "invalid_delivery_request"
     message = "The delivery request is invalid."
+
+
+class CouponNotFound(AppError):
+    status_code = 404
+    code = "coupon_not_found"
+    message = "The coupon code was not found."
+
+
+class CouponInactive(AppError):
+    status_code = 400
+    code = "coupon_inactive"
+    message = "The coupon is currently inactive."
+
+
+class CouponExpired(AppError):
+    status_code = 400
+    code = "coupon_expired"
+    message = "The coupon has expired or is not yet valid."
+
+
+class CouponMinOrderNotMet(AppError):
+    status_code = 400
+    code = "coupon_min_order_not_met"
+    message = "The order subtotal does not meet the minimum required for this coupon."
+
+
+class CouponUsageLimitReached(AppError):
+    status_code = 409
+    code = "coupon_usage_limit_reached"
+    message = "The global usage limit for this coupon has been reached."
+
+
+class CouponCustomerLimitReached(AppError):
+    status_code = 409
+    code = "coupon_customer_limit_reached"
+    message = "You have already reached the maximum allowed redemptions for this coupon."
+
+
+class InsufficientLoyaltyPoints(AppError):
+    status_code = 409
+    code = "insufficient_loyalty_points"
+    message = "You do not have enough loyalty points for this redemption."
+
+
+class TaxCalculationError(AppError):
+    status_code = 400
+    code = "tax_calculation_error"
+    message = "Unable to compute taxes for the requested jurisdiction."

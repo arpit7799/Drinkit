@@ -33,10 +33,17 @@ from app.modules.cart.service import (
     _load_cart,
 )
 from app.modules.pricing.service import get_current_variant_price
+from app.modules.promotions.service import (
+    apply_coupon_to_order,
+    award_loyalty_points,
+    redeem_loyalty_points,
+    validate_coupon,
+)
+from app.modules.promotions.tax import calculate_order_taxes
 
 logger = logging.getLogger(__name__)
 
-TAX_RATE_BPS = 1800  # 18% GST in basis points
+TAX_RATE_BPS = 1800  # Fallback 18% GST in basis points
 DELIVERY_FEE_MINOR = 2900  # ₹29.00 flat fee in minor units
 RESERVATION_TTL_MINUTES = 15
 
@@ -46,12 +53,14 @@ async def create_order_from_cart(
     *,
     user_id: UUID,
     address_id: UUID,
+    coupon_code: str | None = None,
+    redeem_points: int = 0,
 ) -> Order:
     """Create an immutable order from the customer's active cart.
 
     Locks the cart, validates address ownership, revalidates serviceability,
     reserves inventory at the serviceable location, freezes line prices,
-    computes totals, and emits outbox events.
+    computes taxes and promotional discounts, and emits outbox events.
     """
 
     async with transaction(session):
@@ -65,7 +74,7 @@ async def create_order_from_cart(
             raise EmptyCartError
 
         # Validate address ownership and load address
-        await _validate_address_ownership(session, user_id, address_id)
+        address = await _validate_address_ownership(session, user_id, address_id)
 
         # Revalidate serviceability and pick fulfillment location
         location = await resolve_fulfillment_location(
@@ -82,11 +91,51 @@ async def create_order_from_cart(
         # Freeze line prices and build order lines
         order_lines = await _build_order_lines(session, cart, location)
 
-        # Compute totals
+        # Compute subtotal
         subtotal_minor = sum(line.line_total_minor for line in order_lines)
-        tax_minor = (subtotal_minor * TAX_RATE_BPS) // 10000
+
+        # Validate and apply promotional coupon if provided
+        coupon = None
+        coupon_discount_minor = 0
+        if coupon_code:
+            coupon, coupon_discount_minor = await validate_coupon(
+                session,
+                code=coupon_code,
+                cart_subtotal_minor=subtotal_minor,
+                customer_id=user_id,
+            )
+
+        # Compute dynamic itemized GST taxes based on delivery address postal code
+        tax_items = [
+            {
+                "variant_id": line.variant_id,
+                "line_subtotal_minor": line.line_total_minor,
+            }
+            for line in order_lines
+        ]
+        tax_res = await calculate_order_taxes(
+            session,
+            postal_code=address.postal_code,
+            items=tax_items,
+        )
+        tax_minor = tax_res.total_tax_minor
+
         delivery_fee_minor = DELIVERY_FEE_MINOR
-        total_minor = subtotal_minor + tax_minor + delivery_fee_minor
+
+        # Temporary total to determine max allowable points redemption
+        discounted_subtotal = max(0, subtotal_minor - coupon_discount_minor)
+        raw_total_minor = discounted_subtotal + tax_minor + delivery_fee_minor
+
+        # Calculate and check loyalty points redemption
+        loyalty_discount_minor = 0
+        if redeem_points > 0:
+            # Max discount cannot exceed raw total
+            max_points_redeemable = raw_total_minor // 100
+            actual_points = min(redeem_points, max_points_redeemable)
+            loyalty_discount_minor = actual_points * 100
+
+        total_discount_minor = coupon_discount_minor + loyalty_discount_minor
+        total_minor = max(0, subtotal_minor - total_discount_minor) + tax_minor + delivery_fee_minor
 
         # Create order
         order = Order(
@@ -102,6 +151,33 @@ async def create_order_from_cart(
         )
         session.add(order)
         await session.flush()
+
+        # Persist coupon usage if coupon was applied
+        if coupon is not None and coupon_discount_minor > 0:
+            await apply_coupon_to_order(
+                session,
+                coupon=coupon,
+                customer_id=user_id,
+                order_id=order.id,
+                discount_applied_minor=coupon_discount_minor,
+            )
+
+        # Persist loyalty points redemption if points were used
+        if redeem_points > 0 and actual_points > 0:
+            await redeem_loyalty_points(
+                session,
+                customer_id=user_id,
+                order_id=order.id,
+                points_to_redeem=actual_points,
+            )
+
+        # Award loyalty points for confirmed order (1 point per ₹100 spent)
+        await award_loyalty_points(
+            session,
+            customer_id=user_id,
+            order_id=order.id,
+            order_total_minor=total_minor,
+        )
 
         # Persist order lines
         for line in order_lines:
@@ -132,6 +208,8 @@ async def create_order_from_cart(
                 "tax_minor": tax_minor,
                 "delivery_fee_minor": delivery_fee_minor,
                 "total_minor": total_minor,
+                "coupon_code": coupon.code if coupon else None,
+                "discount_minor": total_discount_minor,
             },
         )
 

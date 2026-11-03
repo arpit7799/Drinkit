@@ -30,6 +30,8 @@ class OrderResponse(BaseModel):
 
 class CreateOrderRequest(BaseModel):
     address_id: UUID
+    coupon_code: str | None = None
+    redeem_loyalty_points: int = Field(default=0, ge=0)
 
 
 class PaymentInitiationRequest(BaseModel):

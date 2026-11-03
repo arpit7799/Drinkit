@@ -13,6 +13,14 @@ from app.models.cart import CartItem, ShoppingCart
 from app.models.inventory import InventoryReservation
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
+from app.models.promotions_tax import (
+    Coupon,
+    CouponUsage,
+    LoyaltyAccount,
+    LoyaltyTransaction,
+    TaxJurisdiction,
+    TaxRate,
+)
 
 
 @pytest_asyncio.fixture(scope="module")
@@ -36,6 +44,12 @@ async def integration_engine() -> AsyncEngine:
     yield engine
 
     async with engine.begin() as connection:
+        await connection.execute(delete(CouponUsage))
+        await connection.execute(delete(Coupon))
+        await connection.execute(delete(LoyaltyTransaction))
+        await connection.execute(delete(LoyaltyAccount))
+        await connection.execute(delete(TaxRate))
+        await connection.execute(delete(TaxJurisdiction))
         await connection.execute(delete(OrderLine))
         await connection.execute(delete(Order))
         await connection.execute(delete(CartItem))

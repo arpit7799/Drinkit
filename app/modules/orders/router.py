@@ -61,6 +61,8 @@ async def create_order(
         session,
         user_id=current_user.id,
         address_id=request.address_id,
+        coupon_code=request.coupon_code,
+        redeem_points=request.redeem_loyalty_points,
     )
     return _order_response(order)
 
