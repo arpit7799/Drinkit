@@ -21,6 +21,13 @@ from app.models.inventory import (
 )
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
+from app.models.party import (
+    PartyCartItem,
+    PartyPack,
+    PartyPackItem,
+    PartyParticipant,
+    PartySession,
+)
 from app.models.pricing import VariantPrice
 from app.models.promotions_tax import (
     Coupon,
@@ -66,6 +73,11 @@ __all__ = [
     "OrderFulfillmentTask",
     "OrderLine",
     "OutboxEvent",
+    "PartyCartItem",
+    "PartyPack",
+    "PartyPackItem",
+    "PartyParticipant",
+    "PartySession",
     "Product",
     "ProductVariant",
     "StateAlcoholRegulation",

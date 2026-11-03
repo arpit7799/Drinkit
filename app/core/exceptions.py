@@ -335,3 +335,51 @@ class WarehouseItemNotFound(AppError):
     status_code = 404
     code = "warehouse_item_not_found"
     message = "The requested variant was not found in this fulfillment task."
+
+
+class PartySessionNotFound(AppError):
+    status_code = 404
+    code = "party_session_not_found"
+    message = "The requested party session was not found."
+
+
+class PartyInviteCodeInvalid(AppError):
+    status_code = 404
+    code = "party_invite_code_invalid"
+    message = "The party invite code is invalid or the session has expired."
+
+
+class PartySessionLocked(AppError):
+    status_code = 409
+    code = "party_session_locked"
+    message = "The party cart is currently locked by the host."
+
+
+class PartyParticipantNotFound(AppError):
+    status_code = 404
+    code = "party_participant_not_found"
+    message = "Participant was not found in this party session."
+
+
+class PartyHostPermissionRequired(AppError):
+    status_code = 403
+    code = "party_host_permission_required"
+    message = "Only the party host can perform this action."
+
+
+class PartyItemNotFound(AppError):
+    status_code = 404
+    code = "party_item_not_found"
+    message = "The requested item was not found in the party cart."
+
+
+class PartyPackNotFound(AppError):
+    status_code = 404
+    code = "party_pack_not_found"
+    message = "The requested curated party pack was not found."
+
+
+class PartyCartEmpty(AppError):
+    status_code = 400
+    code = "party_cart_empty"
+    message = "The party cart is empty."

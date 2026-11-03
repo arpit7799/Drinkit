@@ -19,6 +19,13 @@ from app.models.compliance import (
 from app.models.inventory import InventoryReservation
 from app.models.orders import Order, OrderLine
 from app.models.outbox_event import OutboxEvent
+from app.models.party import (
+    PartyCartItem,
+    PartyPack,
+    PartyPackItem,
+    PartyParticipant,
+    PartySession,
+)
 from app.models.promotions_tax import (
     Coupon,
     CouponUsage,
@@ -61,6 +68,11 @@ async def integration_engine() -> AsyncEngine:
         await connection.execute(delete(LoyaltyAccount))
         await connection.execute(delete(TaxRate))
         await connection.execute(delete(TaxJurisdiction))
+        await connection.execute(delete(PartyCartItem))
+        await connection.execute(delete(PartyParticipant))
+        await connection.execute(delete(PartySession))
+        await connection.execute(delete(PartyPackItem))
+        await connection.execute(delete(PartyPack))
         await connection.execute(delete(FulfillmentTaskItem))
         await connection.execute(delete(OrderFulfillmentTask))
         await connection.execute(delete(WarehouseBin))
